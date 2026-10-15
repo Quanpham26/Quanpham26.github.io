@@ -38,8 +38,8 @@ jobs:
       run: |
         crave run --no-patch --work-space android -- "
           # A. Cấu hình Git CHUẨN XÁC (Đã sửa lỗi định dạng email)
-          git config --global user.name \"github-actions[bot]\"
-          git config --global user.email \"41898282+github-actions[bot]@users.noreply.github.com\"
+          git config --global user.name \"Quanpham26\"
+          git config --global user.email \"phamdinhquan688@gmail.com\"
           git config --global color.ui false
 
           # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11

@@ -31,7 +31,6 @@ jobs:
         
     - name: Sync Source and Apply SIM Patches
       run: |
-        crave run --no-patch -- "
           # A. Cấu hình Git CHUẨN XÁC bên trong Server Crave
           git config --global user.name \"github-actions[bot]\"
           git config --global user.email \"41898282+github-actions[bot]@://github.com\"
@@ -86,8 +85,7 @@ jobs:
           sudo umount sys_mount && sudo umount ven_mount
           
           cd rootfs
-          sudo tar -c . | xz -T0 > ../redroid-custom-aosp.tar.xz
-        "
+          sudo tar -c . | xz -T0 > ../redroid-custom-aosp.tar.xz     
 
     - name: Download Build Artifact
       run: |

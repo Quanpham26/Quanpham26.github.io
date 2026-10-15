@@ -36,7 +36,7 @@ jobs:
         
     - name: Sync Source and Apply SIM Patches
       run: |
-        crave run -- "
+        crave run --no-patch -- "
           # 1. Cấu hình Git tự động để vượt qua bước hỏi username của hệ thống
           git config --global user.name \"github-actions[bot]\"
           git config --global user.email \"41898282+github-actions[bot]@://github.com\"

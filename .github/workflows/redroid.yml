@@ -31,10 +31,10 @@ jobs:
         sudo curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo
     
         sudo chmod a+x /usr/local/bin/repo
-    - name: Sync Source and Apply SIM Patches
-      run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    - name: Sync Source and Apply SIM Patches
+      run: |
         
 
         # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11

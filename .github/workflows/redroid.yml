@@ -24,10 +24,17 @@ jobs:
         remove-docker-images: 'true'
 
     # Bước 2: Cài đặt các công cụ biên dịch mã nguồn Android cần thiết
-    - name: Install Build Tools
+    - name: Install Build Tools (Fix OK Luon)
       run: |
-        sudo apt update
-        sudo apt install git-core repo gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 python3-pip -y
+        sudo apt-get update
+        # 1. Cài đặt các công cụ nền tảng bắt buộc để build Android
+        sudo apt-get install git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 -y
+        
+        # 2. Mẹo cài gói repo chính thức thông qua trình quản lý pip của Python (Không lo chết link)
+        pip3 install repo
+        
+        # 3. Liên kết lệnh repo vào hệ thống để gọi trực tiếp
+        sudo ln -sf $(which repo) /usr/local/bin/repo
         
     - name: Sync Source and Apply SIM Patches
       run: |

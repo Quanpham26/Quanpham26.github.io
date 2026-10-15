@@ -10,7 +10,30 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
-      
+
+    - name: Set up Crave CLI (Bản sửa lỗi chuẩn)
+      run: |
+        # Tải script cài đặt chính thức từ trang chủ Crave và thực thi để tự động cấu hình
+        curl -s https://raw.githubusercontent.com/accupara/crave/refs/heads/master/get_crave.sh | bash -s --
+        
+        # Di chuyển file vừa tải vào thư mục hệ thống để gọi lệnh từ mọi nơi
+        sudo mv ./crave /usr/local/bin/crave
+        sudo chmod +x /usr/local/bin/crave
+    - name: Configure Crave API
+      run: |
+        mkdir -p ${{ github.workspace }}/.crave
+        cat << 'EOF' > ${{ github.workspace }}/.crave/crave.conf
+        {
+          "username": "${{ secrets.CRAVE_USERNAME }}",
+          "token": "${{ secrets.CRAVE_TOKEN }}",
+          "project": "android"
+        }
+        EOF
+        # Copy file cấu hình về đúng thư mục gốc của User để Crave nhận diện
+        mkdir -p ${HOME}/.crave
+        cp ${{ github.workspace }}/.crave/crave.conf ${HOME}/.crave/crave.conf
+        
+        
     - name: Sync Source and Apply SIM Patches
       run: |
         crave run -- "

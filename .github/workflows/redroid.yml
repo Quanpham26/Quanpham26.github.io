@@ -33,10 +33,10 @@ jobs:
         
     - name: Sync Source and Apply SIM Patches
       run: |
-        crave run --no-patch --work-space android -- "
-          # A. Cấu hình Git CHUẨN XÁC (Đã sửa lỗi định dạng email)
-          git config --global user.name \"Quanpham26\"
-          git config --global user.email \"phamdinhquan688@gmail.com\"
+        crave run --no-patch -- "
+          # A. Cấu hình Git CHUẨN XÁC bên trong Server Crave
+          git config --global user.name \"github-actions[bot]\"
+          git config --global user.email \"41898282+github-actions[bot]@://github.com\"
           git config --global color.ui false
 
           # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11

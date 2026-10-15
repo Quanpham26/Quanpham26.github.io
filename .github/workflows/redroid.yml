@@ -1,4 +1,4 @@
-name: Build Custom Redroid AOSP via Crave
+name: Build Custom Redroid imei phone
 
 on:
   workflow_dispatch: 
@@ -36,19 +36,40 @@ jobs:
           git config --global color.ui false
 
           # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11
-          mkdir -p redroid-src && cd redroid-src
-          repo init -u https://googlesource.com -b android-11.0.0_r48 --depth=1
-          git clone https://github.com .repo/local_manifests -b redroid-11.0.0
+          mkdir ~/redroid && cd ~/redroid
+
+          # check supported branch in https://github.com/remote-android/redroid-patches.git
+          repo init -u https://android.googlesource.com/platform/manifest --git-lfs --depth=1 -b android-11.0.0_r48
+          
+          # add local manifests
+          git clone https://github.com/remote-android/local_manifests.git ~/redroid/.repo/local_manifests -b 11.0.0
+
           repo sync -c -j\$(nproc) --no-tags --no-clone-bundle
 
           # 3. Fake thông số phần cứng SIM
           sed -i '/public String getLine1NumberForDisplay/a\\    String customNumber = android.os.SystemProperties.get(\"ro.boot.custom_phone_number\", \"\");\\    if (!customNumber.isEmpty()) return customNumber;' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneInterfaceManager.java
+          sed -i '/public String getDeviceId/a\\    String customImei = android.os.SystemProperties.get(\"ro.boot.custom_imei\", \"\");\\    if (!customImei.isEmpty()) return customImei;' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneSubInfoController.java
+          sed -i '/public Bundle call/a\\    String customAndroidId = android.os.SystemProperties.get(\"ro.boot.custom_android_id\", \"\");\\    if (!customAndroidId.isEmpty()) { Bundle b = new Bundle(); b.putString(\"value\", customAndroidId); return b; }' frameworks/base/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+
+          sed -i '/public int getDataNetworkType/a\\    return 20; // 20 tương ứng với NETWORK_TYPE_NR (5G) trong Android' frameworks/base/telephony/java/android/telephony/ServiceState.java
           
-          # 4. Áp dụng bản vá hệ thống
-          git clone https://github.com
-          cd redroid-patches && ./apply-patch.sh && cd ..
+          git clone https://github.com/remote-android/redroid-patches.git ~/redroid-patches
+          ~/redroid-patches/apply-patch.sh ~/redroid
 
           # 5. Biên dịch hệ điều hành
+          git clone https://github.com/remote-android/redroid-doc.git
+          cd redroid-doc/android-builder-docker
+          docker build --build-arg userid=$(id -u) --build-arg groupid=$(id -g) --build-arg username=$(id -un) -t redroid-builder .
+          
+          #####################
+          # start builder
+          #####################
+          docker run -it --rm --hostname redroid-builder --name redroid-builder -v ~/redroid:/src redroid-builder
+          
+          #####################
+          # build redroid
+          #####################
+          cd /src
           source build/envsetup.sh
           lunch redroid_x86_64-userdebug
           m -j\$(nproc)
@@ -68,7 +89,7 @@ jobs:
 
     - name: Download Build Artifact
       run: |
-        crave pull redroid-src/out/target/product/redroid_x86_64/redroid-custom-aosp.tar.xz
+        crave pull redroid/out/target/product/redroid_x86_64/redroid-custom-aosp.tar.xz
 
     - name: Upload Redroid Tarball to GitHub Artifacts
       uses: actions/upload-artifact@v4

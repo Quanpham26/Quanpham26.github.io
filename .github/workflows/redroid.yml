@@ -50,19 +50,23 @@ jobs:
         repo sync -c -j\$(nproc) --no-tags --no-clone-bundle
 
         # Fake 2 Số Điện Thoại cho SIM 1 và SIM 2
-        sed -i '/public String getLine1NumberForDisplay/a\    int slot = mPhone.getPhoneId();\    if (slot == 0) {\        String num1 = android.os.SystemProperties.get("ro.boot.custom_phone_number", "");\        if (!num1.isEmpty()) return num1;\    } else if (slot == 1) {\        String num2 = android.os.SystemProperties.get("ro.boot.custom_phone_number2", "");\        if (!num2.isEmpty()) return num2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneInterfaceManager.java
+
+
+        grep -n -E 'getImei|getDeviceId|getSubscriberId|getLine1Number' \
+        frameworks/opt/telephony/src/com/android/internal/telephony/PhoneSubInfoController.java
+        #sed -i '/public String getLine1NumberForDisplay/a\    int slot = mPhone.getPhoneId();\    if (slot == 0) {\        String num1 = android.os.SystemProperties.get("ro.boot.custom_phone_number", "");\        if (!num1.isEmpty()) return num1;\    } else if (slot == 1) {\        String num2 = android.os.SystemProperties.get("ro.boot.custom_phone_number2", "");\        if (!num2.isEmpty()) return num2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneInterfaceManager.java
         
         # Fake 2 mã số IMEI độc lập cho 2 khe SIM
-        sed -i '/public String getDeviceIdForPhone/a\    int slot = phoneId;\    if (slot == 0) {\        String imei1 = android.os.SystemProperties.get("ro.boot.custom_imei", "");\        if (!imei1.isEmpty()) return imei1;\    } else if (slot == 1) {\        String imei2 = android.os.SystemProperties.get("ro.boot.custom_imei2", "");\        if (!imei2.isEmpty()) return imei2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneSubInfoController.java
+        #sed -i '/public String getDeviceIdForPhone/a\    int slot = phoneId;\    if (slot == 0) {\        String imei1 = android.os.SystemProperties.get("ro.boot.custom_imei", "");\        if (!imei1.isEmpty()) return imei1;\    } else if (slot == 1) {\        String imei2 = android.os.SystemProperties.get("ro.boot.custom_imei2", "");\        if (!imei2.isEmpty()) return imei2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneSubInfoController.java
         
         # Fake chuỗi mã Android ID hệ thống
-        sed -i '/public Bundle call/a\    String customAndroidId = android.os.SystemProperties.get("ro.boot.custom_android_id", "");\    if (!customAndroidId.isEmpty()) { Bundle b = new Bundle(); b.putString("value", customAndroidId); return b; }\' frameworks/base/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+        #sed -i '/public Bundle call/a\    String customAndroidId = android.os.SystemProperties.get("ro.boot.custom_android_id", "");\    if (!customAndroidId.isEmpty()) { Bundle b = new Bundle(); b.putString("value", customAndroidId); return b; }\' frameworks/base/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
         
         # Fake Tên nhà mạng hiển thị độc lập
-        sed -i '/public CharSequence getCarrierName/a\    int slot = getSlotIndex(subId);\    if (slot == 0) {\        String carrier1 = android.os.SystemProperties.get("ro.boot.custom_carrier1", "");\        if (!carrier1.isEmpty()) return carrier1;\    } else if (slot == 1) {\        String carrier2 = android.os.SystemProperties.get("ro.boot.custom_carrier2", "");\        if (!carrier2.isEmpty()) return carrier2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/SubscriptionController.java
+        #sed -i '/public CharSequence getCarrierName/a\    int slot = getSlotIndex(subId);\    if (slot == 0) {\        String carrier1 = android.os.SystemProperties.get("ro.boot.custom_carrier1", "");\        if (!carrier1.isEmpty()) return carrier1;\    } else if (slot == 1) {\        String carrier2 = android.os.SystemProperties.get("ro.boot.custom_carrier2", "");\        if (!carrier2.isEmpty()) return carrier2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/SubscriptionController.java
 
         # Ép hiện thị cột sóng mạng 5G NR
-        sed -i '/public int getDataNetworkType/a\    return 20;' frameworks/base/telephony/java/android/telephony/ServiceState.java        
+        #sed -i '/public int getDataNetworkType/a\    return 20;' frameworks/base/telephony/java/android/telephony/ServiceState.java        
         git clone https://github.com/remote-android/redroid-patches.git ~/redroid-patches
         ~/redroid-patches/apply-patch.sh ~/redroid
 

@@ -11,25 +11,27 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up Crave CLI (Bản sửa lỗi chuẩn)
+    
+    - name: Maximize Build Disk Space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 2048
+        swap-size-mb: 16384 # Tạo 16GB RAM ảo (Swap) để không bị sập lỗi tràn bộ nhớ (Out of Memory)
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    # Bước 2: Cài đặt các công cụ biên dịch mã nguồn Android cần thiết
+    - name: Install Build Tools
       run: |
-        # Tải script cài đặt chính thức từ trang chủ Crave và thực thi để tự động cấu hình
-        curl -s https://raw.githubusercontent.com/accupara/crave/refs/heads/master/get_crave.sh | bash -s --
-        
-        # Di chuyển file vừa tải vào thư mục hệ thống để gọi lệnh từ mọi nơi
-        sudo mv ./crave /usr/local/bin/crave
-        sudo chmod +x /usr/local/bin/crave
-    - name: Configure Crave API
-      run: |
-        mkdir -p ${HOME}/.crave
-        cat << 'EOF' > ${HOME}/.crave/crave.conf
-        {
-          "username": "${{ secrets.CRAVE_USERNAME }}",
-          "token": "${{ secrets.CRAVE_TOKEN }}",
-          "project": "android"
-        }
-        EOF
-        
+        sudo apt update
+        sudo apt install git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 python3-pip -y
+        mkdir -p ${HOME}/bin
+        curl -k https://storage.googleapis.com/git-repo-downloads/repo >  ${HOME}/bin/repo
+        chmod a+x ${HOME}/bin/repo
+        echo "${HOME}/bin" >> $GITHUB_PATH   
         
     - name: Sync Source and Apply SIM Patches
       run: |
@@ -99,5 +101,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: redroid-custom-image
-        path: redroid-custom-aosp.tar.xz
+        path: /home/runner/redroid/out/target/product/redroid_x86_64/redroid-custom-image.tar.xz
         compression-level: 0

@@ -1,0 +1,78 @@
+name: Build Custom Redroid AOSP via Crave
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  build-redroid:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Crave CLI
+      run: |
+        mkdir -p ${HOME}/bin
+        curl -s https://githubusercontent.com > ${HOME}/bin/crave
+        chmod +x ${HOME}/bin/crave
+        echo "${HOME}/bin" >> $GITHUB_PATH
+
+    - name: Configure Crave API
+      run: |
+        mkdir -p ${HOME}/.crave
+        echo '{
+          "username": "${{ secrets.CRAVE_USERNAME }}",
+          "token": "${{ secrets.CRAVE_TOKEN }}",
+          "project": "android"
+        }' > ${HOME}/.crave/crave.conf
+
+    - name: Sync Source and Apply SIM Patches
+      run: |
+        crave run -- "
+          # 1. Cấu hình Git tự động để vượt qua bước hỏi username của hệ thống
+          git config --global user.name \"github-actions[bot]\"
+          git config --global user.email \"41898282+github-actions[bot]@://github.com\"
+          git config --global color.ui false
+
+          # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11
+          mkdir -p redroid-src && cd redroid-src
+          repo init -u https://googlesource.com -b android-11.0.0_r48 --depth=1
+          git clone https://github.com .repo/local_manifests -b redroid-11.0.0
+          repo sync -c -j\$(nproc) --no-tags --no-clone-bundle
+
+          # 3. Fake thông số phần cứng SIM
+          sed -i '/public String getLine1NumberForDisplay/a\\    String customNumber = android.os.SystemProperties.get(\"ro.boot.custom_phone_number\", \"\");\\    if (!customNumber.isEmpty()) return customNumber;' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneInterfaceManager.java
+          
+          # 4. Áp dụng bản vá hệ thống
+          git clone https://github.com
+          cd redroid-patches && ./apply-patch.sh && cd ..
+
+          # 5. Biên dịch hệ điều hành
+          source build/envsetup.sh
+          lunch redroid_x86_64-userdebug
+          m -j\$(nproc)
+          
+          # 6. Đóng gói sản phẩm
+          cd out/target/product/redroid_x86_64/
+          mkdir sys_mount && sudo mount -o loop system.img sys_mount
+          mkdir ven_mount && sudo mount -o loop vendor.img ven_mount
+          mkdir -p rootfs
+          sudo cp -a sys_mount/* rootfs/
+          sudo cp -a ven_mount/* rootfs/vendor/
+          sudo umount sys_mount && sudo umount ven_mount
+          
+          cd rootfs
+          sudo tar -c . | xz -T0 > ../redroid-custom-aosp.tar.xz
+        "
+
+    - name: Download Build Artifact
+      run: |
+        crave pull redroid-src/out/target/product/redroid_x86_64/redroid-custom-aosp.tar.xz
+
+    - name: Upload Redroid Tarball to GitHub Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: redroid-custom-image
+        path: redroid-custom-aosp.tar.xz
+        compression-level: 0

@@ -38,6 +38,7 @@ jobs:
 
           # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11
           mkdir ~/redroid && cd ~/redroid
+          mkdir -p ~/.repo
 
           # check supported branch in https://github.com/remote-android/redroid-patches.git
           repo init -u https://android.googlesource.com/platform/manifest --git-lfs --depth=1 -b android-11.0.0_r48

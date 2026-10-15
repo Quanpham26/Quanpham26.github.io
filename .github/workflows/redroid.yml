@@ -3,15 +3,16 @@ name: Build Custom Redroid imei phone
 on:
   workflow_dispatch: 
 
+
+  
+permissions:
+  contents: write
+  
 jobs:
   build-redroid:
     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    
+    steps:  
     - name: Maximize Build Disk Space
       uses: easimon/maximize-build-space@master
       with:
@@ -22,16 +23,20 @@ jobs:
         remove-haskell: 'true'
         remove-codeql: 'true'
         remove-docker-images: 'true'
-
+        
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+          persist-credentials: true
     # Bước 2: Cài đặt các công cụ biên dịch mã nguồn Android cần thiết
     - name: Install Build Tools (Fix OK Luon)
       run: |
         sudo apt-get update
         # 1. Cài đặt các công cụ nền tảng bắt buộc để build Android
         sudo apt-get install git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 -y
-        curl -k https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo
+        sudo curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo
     
-        chmod a+x /usr/local/bin/repo
+        sudo chmod a+x /usr/local/bin/repo
     - name: Sync Source and Apply SIM Patches
       run: |
           git config --global user.name "github-actions[bot]"

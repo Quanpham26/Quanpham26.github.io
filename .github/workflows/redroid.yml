@@ -36,7 +36,7 @@ jobs:
       run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global color.ui false
+          
 
           # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11
           mkdir ~/redroid && cd ~/redroid

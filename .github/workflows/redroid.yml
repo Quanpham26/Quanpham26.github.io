@@ -34,17 +34,16 @@ jobs:
         chmod a+x /usr/local/bin/repo
     - name: Sync Source and Apply SIM Patches
       run: |
-          # A. Cấu hình Git CHUẨN XÁC bên trong Server Crave
-          git config --global user.name \"Quanpham26\"
-          git config --global user.email \"phamdinhquan688@gmail.com\"
-          git config --global color.ui false
+         git config --global user.name "github-actions[bot]"
+         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+         git config --global color.ui false
 
           # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11
           mkdir ~/redroid && cd ~/redroid
           
 
           # check supported branch in https://github.com/remote-android/redroid-patches.git
-          repo init --no-repo-verify -u https://android.googlesource.com/platform/manifest --git-lfs --depth=1 -b android-11.0.0_r48
+          repo init -u https://android.googlesource.com/platform/manifest --git-lfs --depth=1 -b android-11.0.0_r48
           mkdir ~/.repo
           # add local manifests
           git clone https://github.com/remote-android/local_manifests.git ~/redroid/.repo/local_manifests -b 11.0.0

@@ -47,7 +47,7 @@ jobs:
         # add local manifests
         git clone https://github.com/remote-android/local_manifests.git ~/redroid/.repo/local_manifests -b 11.0.0
 
-        repo sync -c -j\$(nproc) --no-tags --no-clone-bundle
+        repo sync -c
 
         # Fake 2 Số Điện Thoại cho SIM 1 và SIM 2
 

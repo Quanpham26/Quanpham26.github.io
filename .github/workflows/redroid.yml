@@ -5,6 +5,9 @@ on:
 jobs:
   build-redroid:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:  
     - name: Maximize Build Disk Space
@@ -26,8 +29,79 @@ jobs:
     - name: Install Build Tools (Fix OK Luon)
       run: |
         sudo apt-get update
-        # 1. Cài đặt các công cụ nền tảng bắt buộc để build Android
         mkdir ~/redroid && cd ~/redroid
+        # 1. Cài đặt các công cụ nền tảng bắt buộc để build Android
+        
         sudo curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+        
         sudo chmod a+x /usr/local/bin/repo
-        repo version
+    - name: Sync Source and Apply SIM Patches
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+
+        # 2. Bắt đầu Khởi tạo và tải mã nguồn Redroid 11
+        
+        
+
+        # check supported branch in https://github.com/remote-android/redroid-patches.git
+        repo init -u https://android.googlesource.com/platform/manifest --git-lfs --depth=1 -b android-11.0.0_r48
+        mkdir ~/.repo
+        # add local manifests
+        git clone https://github.com/remote-android/local_manifests.git ~/redroid/.repo/local_manifests -b 11.0.0
+        repo sync -c --no-tags --force-sync -j2
+
+        # Fake 2 Số Điện Thoại cho SIM 1 và SIM 2
+        sed -i '/public String getLine1NumberForDisplay/a\    int slot = mPhone.getPhoneId();\    if (slot == 0) {\        String num1 = android.os.SystemProperties.get("ro.boot.custom_phone_number", "");\        if (!num1.isEmpty()) return num1;\    } else if (slot == 1) {\        String num2 = android.os.SystemProperties.get("ro.boot.custom_phone_number2", "");\        if (!num2.isEmpty()) return num2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneInterfaceManager.java
+        
+        # Fake 2 mã số IMEI độc lập cho 2 khe SIM
+        sed -i '/public String getDeviceIdForPhone/a\    int slot = phoneId;\    if (slot == 0) {\        String imei1 = android.os.SystemProperties.get("ro.boot.custom_imei", "");\        if (!imei1.isEmpty()) return imei1;\    } else if (slot == 1) {\        String imei2 = android.os.SystemProperties.get("ro.boot.custom_imei2", "");\        if (!imei2.isEmpty()) return imei2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/PhoneSubInfoController.java
+        
+        # Fake chuỗi mã Android ID hệ thống
+        sed -i '/public Bundle call/a\    String customAndroidId = android.os.SystemProperties.get("ro.boot.custom_android_id", "");\    if (!customAndroidId.isEmpty()) { Bundle b = new Bundle(); b.putString("value", customAndroidId); return b; }\' frameworks/base/packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+        
+        # Fake Tên nhà mạng hiển thị độc lập
+        sed -i '/public CharSequence getCarrierName/a\    int slot = getSlotIndex(subId);\    if (slot == 0) {\        String carrier1 = android.os.SystemProperties.get("ro.boot.custom_carrier1", "");\        if (!carrier1.isEmpty()) return carrier1;\    } else if (slot == 1) {\        String carrier2 = android.os.SystemProperties.get("ro.boot.custom_carrier2", "");\        if (!carrier2.isEmpty()) return carrier2;\    }' frameworks/opt/telephony/src/com/android/internal/telephony/SubscriptionController.java
+
+        # Ép hiện thị cột sóng mạng 5G NR
+        sed -i '/public int getDataNetworkType/a\    return 20;' frameworks/base/telephony/java/android/telephony/ServiceState.java        
+        git clone https://github.com/remote-android/redroid-patches.git ~/redroid-patches
+        ~/redroid-patches/apply-patch.sh ~/redroid
+
+        # 5. Biên dịch hệ điều hành
+        git clone https://github.com/remote-android/redroid-doc.git
+        cd redroid-doc/android-builder-docker
+        docker build --build-arg userid=$(id -u) --build-arg groupid=$(id -g) --build-arg username=$(id -un) -t redroid-builder .
+        
+        #####################
+        # start builder
+        #####################
+        docker run -it --rm --hostname redroid-builder --name redroid-builder -v ~/redroid:/src redroid-builder
+        
+        #####################
+        # build redroid
+        #####################
+        cd /src
+        source build/envsetup.sh
+        lunch redroid_x86_64-userdebug
+        m -j$(nproc)
+        
+        # 6. Đóng gói sản phẩm
+        cd out/target/product/redroid_x86_64/
+        mkdir sys_mount && sudo mount -o loop system.img sys_mount
+        mkdir ven_mount && sudo mount -o loop vendor.img ven_mount
+        mkdir -p rootfs
+        sudo cp -a sys_mount/* rootfs/
+        sudo cp -a ven_mount/* rootfs/vendor/
+        sudo umount sys_mount && sudo umount ven_mount
+        
+        cd rootfs
+        sudo tar -c . | xz -T0 > ../redroid-custom-aosp.tar.xz     
+
+    - name: Upload Redroid Tarball to GitHub Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: redroid-custom-image
+        path: /home/runner/redroid/out/target/product/redroid_x86_64/redroid-custom-image.tar.xz
+        compression-level: 0
